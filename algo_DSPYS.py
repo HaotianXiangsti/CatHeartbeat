@@ -314,6 +314,7 @@ def calc_bed_occupancy(data, params, args):
 #     rr = calc_rr_with_hr(data, hr, params, args)
 #     return rr
 
+"""
 def calc_bp(data, params, args):
     if args.algo_bp == "algo_VTCN":	
         from algo_DLYS import BP_model	
@@ -323,6 +324,7 @@ def calc_bp(data, params, args):
         [sp, dp] = DL_Model().predict(data[-get_bp_window(args):])
     # sp, dp = -1
     return sp, dp
+"""
 
 
 GOOD_CNT = 0
@@ -343,7 +345,7 @@ def calc_vital_signs(data, params, args):
     return hr, rr, sp, dp, envelopes
 
 # 1 - moving; 0 - not moving
-from algo_dsp import checkMovement
+#from algo_dsp import checkMovement
 def calc_sleep_activities(data, params, args):
     if True == checkMovement(data):
         movement = 1
@@ -1013,6 +1015,8 @@ def feature_extraction(temp_data, Fs):
 bs_model = torch.load('BS_acc_0.9401_f1_0.9363.pth', map_location = 'cpu')
 device =  "cpu"
 import torch.nn.functional as F
+
+"""
 from BS_model import TemporalConvNet, classifier, Spec_Net, fusion_classifier
 model = TemporalConvNet(num_inputs = 1, first_output_num_channels = 16, num_blocks = 5, kernel_size=3, dropout=0.1).to(device)
 if len(bs_model) == 3:
@@ -1024,6 +1028,7 @@ else:
     model.load_state_dict(bs_model['model'])
     clf = classifier(final_out_channels = 256, features_len = 32, n_target = 2).to(device)
 clf.load_state_dict(bs_model['classifier'])
+"""
 ###########################
 
 def bed_occupancy_detection(data, pre_energy):

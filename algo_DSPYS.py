@@ -1011,12 +1011,13 @@ def feature_extraction(temp_data, Fs):
 # loaded_rf = joblib.load("../random_forest.joblib")
 #####################################
 ########################### load deep learning model
+"""
 # bs_model = torch.load('../BS_on_0.9567_off_0.9903.pth', map_location=torch.device('cpu'))
 bs_model = torch.load('BS_acc_0.9401_f1_0.9363.pth', map_location = 'cpu')
 device =  "cpu"
 import torch.nn.functional as F
 
-"""
+
 from BS_model import TemporalConvNet, classifier, Spec_Net, fusion_classifier
 model = TemporalConvNet(num_inputs = 1, first_output_num_channels = 16, num_blocks = 5, kernel_size=3, dropout=0.1).to(device)
 if len(bs_model) == 3:

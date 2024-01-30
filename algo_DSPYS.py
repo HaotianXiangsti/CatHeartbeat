@@ -17,6 +17,7 @@ from datetime import datetime
 import joblib
 import torch
 import random
+import os
 
 BS_DURATION = 10
 HR_DURATION = 10
@@ -1184,6 +1185,86 @@ def signal_quality_assessment_v3(x, Fs, n_lag, low, high,
     while (index + window_size < len(acf_x)):
         sig_means.append(np.mean(acf_x[index:index + window_size]))
         index = index + window_size
+    if np.std(sig_means) < 0.1 and 2 < frequency < 3.5 and power > 0.23:
+        res = [True, np.std(sig_means), frequency, power, acf_x]
+        if show:
+            fig.suptitle('good data')
+    else:
+        res = [False, np.std(sig_means), frequency, power, acf_x]
+        if show:
+            fig.suptitle('bad data')
+    return res
+
+
+def signal_quality_assessment_v3_with_timestamp(x, Fs, n_lag, low, high,
+                                 denoised_method, good_list = list(), bad_list = list(),show=False):
+    # x = (x - np.mean(x))/np.std(x)
+
+    x = x[:-1]
+
+    time_stamp = x[-1:].squeeze()
+
+    # Let's str it
+    time_stamp_str = str(int(time_stamp))
+
+    current_directory = os.getcwd()
+
+
+
+
+    if denoised_method == 'DWT':
+        denoised_sig = wavelet_reconstruction(x=x, fs=Fs,
+                                              low=low, high=high)
+
+    elif denoised_method == 'bandpass':
+        denoised_sig = band_pass_filter(data=x, Fs=Fs,
+                                        low=low, high=high, order=5)
+    index = 0
+    window_size = int(Fs)
+    z = hilbert(denoised_sig)
+    # z = x
+    envelope = np.abs(z)
+
+    sg_win_len = round(0.11 * Fs)
+    if sg_win_len % 2 == 0:
+        sg_win_len -= 1
+    smoothed_envelope = savgol_filter(envelope, sg_win_len, 3, mode='nearest')
+    smoothed_envelope = (smoothed_envelope - np.mean(smoothed_envelope)) / np.std(smoothed_envelope)
+
+    sg_win_len = round(1.01 * Fs)
+    if sg_win_len % 2 == 0:
+        sg_win_len -= 1
+    trend = savgol_filter(smoothed_envelope, sg_win_len, 7, mode='nearest')
+    smoothed_envelope = smoothed_envelope - trend
+    smoothed_envelope = (smoothed_envelope - np.mean(smoothed_envelope)) / np.std(smoothed_envelope)
+    acf_x = acf(smoothed_envelope, nlags=n_lag)
+    acf_x = acf_x / acf_x[0]
+
+    nfft = next_power_of_2(x=len(x) * 2)
+    f, Pxx_den = periodogram(acf_x, fs=Fs, nfft=nfft)
+
+    sig_means = []
+    index = 0
+    frequency = f[np.argmax(Pxx_den)]
+    power = max(Pxx_den)
+
+    if show:
+        fig, ax = plt.subplots(6, 1, figsize=(16, 18))
+        ax[0].plot(x, label='raw data')
+        ax[1].plot(denoised_sig, label='denoised data')
+        ax[2].plot(envelope, label='envelope extraction by Hilbert transform')
+        ax[3].plot(smoothed_envelope, label='smoothed envelope')
+        ax[4].plot(acf_x, label='ACF of smoothed envelope')
+        ax[5].plot(f, Pxx_den, label='spectrum of ACF')
+        for i in range(len(ax)):
+            ax[i].legend()
+
+    while (index + window_size < len(acf_x)):
+        sig_means.append(np.mean(acf_x[index:index + window_size]))
+        index = index + window_size
+
+    print(frequency)
+
     if np.std(sig_means) < 0.1 and 2 < frequency < 3.5 and power > 0.23:
         res = [True, np.std(sig_means), frequency, power, acf_x]
         if show:
